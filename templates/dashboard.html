@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="dashboard-layout">
+  
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="user-card">
+        <div class="user-avatar-lg">{{ current_user.name[0].upper() }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ current_user.name }}</div>
+          <div class="user-location" id="user-location">📍 Locating...</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="sidebar-section">
+      <h3 class="sidebar-label">Current Conditions</h3>
+      <div class="condition-item">
+        <span>🌧️ Rainfall</span>
+        <span id="sidebar-rainfall" class="value">--mm/hr</span>
+      </div>
+      <div class="condition-item">
+        <span>💧 River Level</span>
+        <span id="sidebar-river" class="value">--m</span>
+      </div>
+      <div class="condition-item">
+        <span>🌡️ Temperature</span>
+        <span id="sidebar-temp" class="value">--°C</span>
+      </div>
+      <div class="condition-item">
+        <span>💨 Humidity</span>
+        <span id="sidebar-humidity" class="value">--%</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3 class="sidebar-label">IoT Sensors</h3>
+      <div id="sensor-list">
+        {% for s in sensors %}
+        <div class="sensor-item">
+          <span class="sensor-dot {% if s.water_level_cm > 100 %}red{% elif s.water_level_cm > 50 %}orange{% else %}green{% endif %}"></span>
+          <span class="sensor-name">{{ s.name }}</span>
+          <span class="sensor-val">{{ s.water_level_cm }}cm</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN DASHBOARD -->
+  <div class="dashboard-main">
+    
+    <!-- Risk Banner -->
+    <div id="main-risk-card" class="risk-card">
+      <div class="risk-left">
+        <div class="risk-label">FLOOD RISK LEVEL</div>
+        <div id="risk-level-display" class="risk-level-text">CALCULATING...</div>
+        <div id="risk-description" class="risk-desc">Fetching real-time data...</div>
+      </div>
+      <div class="risk-right" style="position: relative; width: 140px; height: 140px;">
+        <canvas id="risk-gauge"></canvas>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">🌧️</div>
+        <div class="stat-value" id="stat-rainfall">--</div>
+        <div class="stat-label">mm/hr Rainfall</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-value" id="stat-risk-score">--</div>
+        <div class="stat-label">% Risk Score</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value" id="stat-reports">{{ reports|length }}</div>
+        <div class="stat-label">Community Reports</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🛡️</div>
+        <div class="stat-value">5</div>
+        <div class="stat-label">Active Sensors</div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Rainfall vs Flood Risk (24h)</h3>
+        <div style="height: 250px;"><canvas id="rainfall-chart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Water Level Sensors</h3>
+        <div style="height: 250px;"><canvas id="sensor-chart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Mini Map + Recent Reports -->
+    <div class="bottom-grid">
+      <div class="card">
+        <div class="card-header">
+          <h3>Live Map</h3>
+          <a href="/map" class="btn-sm btn-outline">Full Map →</a>
+        </div>
+        <div id="mini-map" style="height:320px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);"></div>
+      </div>
+      <div class="card" style="display:flex; flex-direction: column;">
+        <div class="card-header">
+          <h3>Recent Reports</h3>
+          <a href="/reports" class="btn-sm btn-outline">Submit Report →</a>
+        </div>
+        <div class="reports-list" style="flex: 1; overflow-y: auto;">
+          {% for report in reports %}
+          <div class="report-item severity-{{ report.severity }}">
+            <div class="report-top">
+                <div class="report-severity">{{ report.severity.upper() }}</div>
+                {% if report.verified %}<span class="verified-badge" style="margin-left:auto;">✅</span>{% endif %}
+            </div>
+            <div class="report-desc">{{ report.description[:80] }}{% if report.description|length > 80 %}...{% endif %}</div>
+            <div class="report-meta" style="margin-top:auto;">
+              {{ report.timestamp.strftime('%H:%M') }} · 👍 {{ report.upvotes }}
+            </div>
+          </div>
+          {% else %}
+          <div style="text-align:center; padding: 40px; color: var(--text-secondary);">No recent reports.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/map.js"></script>
+<script src="/static/js/charts.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  // Load weather and update dashboard
+  const pos = await getPosition();
+  document.getElementById('user-location').textContent = `📍 ${pos.lat.toFixed(3)}, ${pos.lng.toFixed(3)}`;
+  
+  const weather = await fetch(`/api/weather/current?lat=${pos.lat}&lng=${pos.lng}`).then(r=>r.json());
+  
+  updateRiskDisplay(weather.risk_level, weather.risk_score, weather);
+  animateValue(document.getElementById('stat-rainfall'), 0, weather.rainfall_mm, 1500);
+  animateValue(document.getElementById('stat-risk-score'), 0, weather.risk_score, 1500);
+  
+  document.getElementById('sidebar-rainfall').textContent = weather.rainfall_mm.toFixed(1) + 'mm/hr';
+  document.getElementById('sidebar-river').textContent = weather.river_level.toFixed(1) + 'm';
+  document.getElementById('sidebar-temp').textContent = weather.temperature.toFixed(1) + '°C';
+  document.getElementById('sidebar-humidity').textContent = weather.humidity.toFixed(0) + '%';
+  
+  // Init charts
+  initRainfallChart('rainfall-chart');
+  initSensorChart('sensor-chart');
+  initRiskGauge('risk-gauge', weather.risk_score);
+  
+  // Init mini map
+  const miniMap = initMap('mini-map', pos.lat, pos.lng);
+  loadFloodZones(miniMap);
+  loadCommunityReports(miniMap);
+  // Hide controls on minimap
+  document.querySelectorAll('.leaflet-control-zoom').forEach(c => c.style.display = 'none');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-container">
+  <div class="page-header">
+    <h1>Emergency Preparedness</h1>
+    <p>Everything you need to stay safe before, during, and after a flood event.</p>
+  </div>
+
+  <div class="prep-tabs">
+    <button class="prep-tab active" data-target="shelters">Relief Camps & Shelters</button>
+    <button class="prep-tab" data-target="contacts">Emergency Contacts</button>
+    <button class="prep-tab" data-target="checklist">Survival Checklist</button>
+  </div>
+
+  <!-- Shelters Tab -->
+  <div id="tab-shelters" class="tab-content">
+    <div class="shelters-grid">
+      {% for s in shelters %}
+      <div class="shelter-card">
+        <div class="shelter-header">
+          <h3>{{ s.name }}</h3>
+          <span class="shelter-type {{ s.type }}">{{ s.type.upper() }} HUB</span>
+        </div>
+        <div class="shelter-capacity">
+          👥 Capacity: <strong>{{ s.capacity }}</strong> people
+        </div>
+        <div class="shelter-facilities">
+          {% for f in s.facilities %}
+          <span class="facility-tag">{{ f }}</span>
+          {% endfor %}
+        </div>
+        <a href="tel:{{ s.contact }}" class="btn-primary shelter-call">📞 Call {{ s.contact }}</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Contacts Tab -->
+  <div id="tab-contacts" class="tab-content hidden">
+    <div class="contacts-grid">
+      {% for c in contacts %}
+      <div class="contact-card">
+        <div class="contact-icon">
+          {% if c.type == 'medical' %}🚑
+          {% elif c.type == 'rescue' %}🚁
+          {% elif c.type == 'emergency' %}🚨
+          {% elif c.type == 'maritime' %}🛥️
+          {% else %}📞{% endif %}
+        </div>
+        <div class="contact-info">
+          <div class="contact-type">{{ c.type.upper() }}</div>
+          <h3>{{ c.name }}</h3>
+          <div class="contact-hours">Available: {{ c.available }}</div>
+        </div>
+        <a href="tel:{{ c.number }}" class="btn-call">Call {{ c.number }}</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Checklist Tab -->
+  <div id="tab-checklist" class="tab-content hidden">
+    <div class="checklist-grid">
+      <div class="checklist-card">
+        <h3>Emergency Kit 🎒</h3>
+        <div class="checklist">
+          <label><input type="checkbox"> 3-day supply of non-perishable food</label>
+          <label><input type="checkbox"> 3 gallons of water per person</label>
+          <label><input type="checkbox"> First-aid kit and essential medications</label>
+          <label><input type="checkbox"> Battery-powered radio and flashlight</label>
+          <label><input type="checkbox"> Extra batteries</label>
+          <label><input type="checkbox"> Power bank for mobile phone</label>
+          <label><input type="checkbox"> Whistle to signal for help</label>
+        </div>
+      </div>
+      <div class="checklist-card">
+        <h3>Important Documents 📁</h3>
+        <div class="checklist">
+          <label><input type="checkbox"> ID cards / Passports / Driver's License</label>
+          <label><input type="checkbox"> Insurance policies</label>
+          <label><input type="checkbox"> Bank account records</label>
+          <label><input type="checkbox"> Emergency contact lists</label>
+          <label><small style="color:var(--accent-cyan);margin-top:10px;display:block;">*Keep all documents in a waterproof portable container, and save digital copies.</small></label>
+        </div>
+      </div>
+      <div class="checklist-card">
+        <h3>Evacuation Prep 🏃</h3>
+        <div class="checklist">
+          <label><input type="checkbox"> Secure your home (move furniture up)</label>
+          <label><input type="checkbox"> Turn off utilities at the main switches</label>
+          <label><input type="checkbox"> Prepare pet supplies (food, leash, carrier)</label>
+          <label><input type="checkbox"> Plan evacuation route via AquaAlert Map</label>
+          <label><input type="checkbox"> Gas up your vehicle</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('.prep-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.prep-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    
+    tab.classList.add('active');
+    document.getElementById(`tab-${tab.dataset.target}`).classList.remove('hidden');
+  });
+});
+</script>
+{% endblock %}

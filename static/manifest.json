@@ -1,0 +1,20 @@
+{
+  "name": "AquaAlert - Flood Warning System",
+  "short_name": "AquaAlert",
+  "description": "AI-powered hyperlocal flood prediction and community alert system",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A1628",
+  "theme_color": "#00D4FF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {"src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ],
+  "categories": ["weather", "utilities", "safety"],
+  "shortcuts": [
+    {"name": "Dashboard", "url": "/dashboard", "description": "View flood risk dashboard"},
+    {"name": "Report Flood", "url": "/reports", "description": "Report waterlogging"},
+    {"name": "Emergency", "url": "/preparedness", "description": "Emergency contacts & shelters"}
+  ]
+}

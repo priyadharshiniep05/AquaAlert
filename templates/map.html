@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="map-page">
+  <div class="map-controls">
+    <h2>🗺️ Live Flood Intelligence Map</h2>
+    <div class="layer-toggles">
+      <label class="toggle"><input type="checkbox" id="toggle-zones" checked> Flood Risk Zones</label>
+      <label class="toggle"><input type="checkbox" id="toggle-shelters" checked> Shelters & Relief</label>
+      <label class="toggle"><input type="checkbox" id="toggle-reports" checked> Community Reports</label>
+      <label class="toggle"><input type="checkbox" id="toggle-routes" checked> Safe Routes</label>
+      <label class="toggle"><input type="checkbox" id="toggle-sensors" checked> IoT Sensors</label>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="dot" style="background:var(--alert-red)"></span> High Risk Zone</div>
+      <div class="legend-item"><span class="dot" style="background:var(--alert-orange)"></span> Medium Risk</div>
+      <div class="legend-item"><span class="dot" style="background:#FFFF00"></span> Low Risk</div>
+      <div class="legend-item"><span class="dot" style="background:transparent;border:1px solid white;">🏠</span> Shelter</div>
+      <div class="legend-item"><span class="route-line"></span> Safe Route</div>
+    </div>
+    <button class="btn-primary" id="report-mode-btn" style="width:100%; margin-top:10px;">📍 Point Extractor / Report</button>
+    <div id="report-form-inline" class="report-form-inline hidden">
+      <select id="report-severity">
+        <option value="waterlogging">Waterlogging / Knee Deep</option>
+        <option value="minor">Minor Flood / Ankle Deep</option>
+        <option value="severe">Severe Flood / Waist Deep+</option>
+      </select>
+      <textarea id="report-desc" placeholder="Describe the situation in detail..."></textarea>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-primary" id="submit-report-btn" style="flex:1;">Submit</button>
+        <button class="btn-ghost" id="cancel-report-btn" style="flex:1;">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <div id="main-map" style="height: 100%; width: 100%;"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/map.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const pos = await getPosition();
+  const map = initMap('main-map', pos.lat, pos.lng);
+  
+  let layers = { zones: [], shelters: [], reports: [], routes: [] };
+  
+  // Load everything
+  Promise.all([
+    loadFloodZones(map).then(l => layers.zones = l),
+    loadShelters(map).then(l => layers.shelters = l),
+    loadCommunityReports(map).then(l => layers.reports = l),
+    loadSafeRoutes(map).then(l => layers.routes = l),
+    loadSensorMarkers(map)
+  ]).then(() => {
+    showToast('Map layers loaded successfully', 'success');
+  });
+  
+  // Layer toggles logic
+  const toggleFeature = (id, layerGroup) => {
+    document.getElementById(id).addEventListener('change', e => {
+      if (e.target.checked) {
+        layerGroup.forEach(l => l.addTo(map));
+      } else {
+        layerGroup.forEach(l => map.removeLayer(l));
+      }
+    });
+  };
+  
+  toggleFeature('toggle-zones', layers.zones);
+  toggleFeature('toggle-shelters', layers.shelters);
+  toggleFeature('toggle-reports', layers.reports);
+  toggleFeature('toggle-routes', layers.routes);
+  
+  // Report mode
+  let reportMode = false;
+  let reportLat, reportLng;
+  let tempMarker = null;
+
+  document.getElementById('report-mode-btn').addEventListener('click', () => {
+    reportMode = !reportMode;
+    document.getElementById('report-form-inline').classList.toggle('hidden', !reportMode);
+    document.getElementById('report-mode-btn').textContent = reportMode ? '❌ Cancel Report Mode' : '📍 Point Extractor / Report';
+    if (reportMode) {
+      map.getContainer().style.cursor = 'crosshair';
+      showToast('Click anywhere on the map to set report location', 'success');
+    } else {
+      map.getContainer().style.cursor = '';
+      if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+    }
+  });
+
+  document.getElementById('cancel-report-btn').addEventListener('click', () => {
+      document.getElementById('report-mode-btn').click();
+  });
+  
+  map.on('click', (e) => {
+    if (!reportMode) return;
+    reportLat = e.latlng.lat;
+    reportLng = e.latlng.lng;
+    if (tempMarker) map.removeLayer(tempMarker);
+    tempMarker = L.marker([reportLat, reportLng]).addTo(map).bindPopup('📍 New Report Location Selected').openPopup();
+  });
+  
+  document.getElementById('submit-report-btn').addEventListener('click', async () => {
+    if (!reportLat || !reportLng) { showToast('Click on the map to set a location first', 'error'); return; }
+    
+    const desc = document.getElementById('report-desc').value.trim();
+    if (!desc) { showToast('Please enter a description', 'error'); return; }
+
+    const submitBtn = document.getElementById('submit-report-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    const res = await fetch('/api/reports', {
+        method: 'POST', 
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+            lat: reportLat, 
+            lng: reportLng,
+            severity: document.getElementById('report-severity').value,
+            description: desc
+        })
+    });
+    
+    if (res.ok) {
+      showToast('Report submitted! Thank you for keeping the community safe. 🙏', 'success');
+      document.getElementById('report-desc').value = '';
+      document.getElementById('report-mode-btn').click(); // toggle off
+      // refresh reports
+      layers.reports.forEach(l => map.removeLayer(l));
+      layers.reports = await loadCommunityReports(map);
+    } else {
+        showToast('Failed to submit report', 'error');
+    }
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit';
+  });
+});
+</script>
+{% endblock %}

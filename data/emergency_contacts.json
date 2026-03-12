@@ -1,0 +1,10 @@
+[
+  {"name": "National Disaster Helpline", "number": "1078", "type": "national", "available": "24/7"},
+  {"name": "Mumbai Flood Control", "number": "+91-22-22694727", "type": "local", "available": "24/7"},
+  {"name": "NDRF Mumbai", "number": "+91-22-26193201", "type": "rescue", "available": "24/7"},
+  {"name": "BMC Disaster Cell", "number": "1916", "type": "municipal", "available": "24/7"},
+  {"name": "Police Emergency", "number": "100", "type": "emergency", "available": "24/7"},
+  {"name": "Ambulance", "number": "108", "type": "medical", "available": "24/7"},
+  {"name": "Fire Brigade", "number": "101", "type": "emergency", "available": "24/7"},
+  {"name": "Coast Guard Mumbai", "number": "+91-22-22614646", "type": "maritime", "available": "24/7"}
+]

@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<!-- HERO SECTION -->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="water-wave"></div>
+    <div class="water-particles">
+      <!-- 20 span.particle elements with random positions via CSS -->
+    </div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-badge">🛰️ AI-Powered · Real-Time · Life-Saving</div>
+    <h1 class="hero-title">
+      <span class="text-gradient">Predict.</span>
+      <span class="text-white"> Alert. </span>
+      <span class="text-gradient">Survive.</span>
+    </h1>
+    <p class="hero-subtitle">
+      Hyperlocal flood intelligence for communities that can't afford to be caught off guard.
+      AquaAlert combines satellite data, ML predictions, and crowdsourced reports to keep you safe.
+    </p>
+    <div class="hero-cta">
+      <a href="/signup" class="btn-primary btn-lg">🌊 Get Protected Free</a>
+      <a href="/dashboard" class="btn-outline btn-lg">View Live Dashboard →</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-num" data-target="99.2">0</span>%<br><small>Prediction Accuracy</small></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><span class="stat-num" data-target="5">0</span>min<br><small>Alert Response</small></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><span class="stat-num" data-target="10">0</span>km<br><small>Alert Radius</small></div>
+    </div>
+  </div>
+  <div class="hero-mockup">
+    <!-- Phone mockup showing dashboard screenshot -->
+    <div class="phone-frame">
+      <div class="phone-screen">
+        <div class="mock-risk high">⚠️ HIGH RISK</div>
+        <div class="mock-metric">Rainfall: 89mm/hr</div>
+        <div class="mock-metric">Risk Score: 87%</div>
+        <div class="mock-alert">🚨 EVACUATE NOW</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-it-works" style="padding: 100px 5%; max-width: 1200px; margin: 0 auto;">
+  <h2 class="section-title" style="text-align: center; font-size: 2.5rem; margin-bottom: 60px; color: var(--accent-cyan);">How AquaAlert Works</h2>
+  <div class="steps-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px;">
+    <div class="step-card" style="background: var(--bg-card); padding: 30px; border-radius: 16px; border: 1px solid var(--border); position: relative; overflow: hidden;">
+      <div class="step-num" style="position: absolute; top: -10px; right: -10px; font-size: 8rem; font-family: 'Rajdhani'; opacity: 0.1; font-weight: 700;">1</div>
+      <div class="step-icon" style="font-size: 3rem; margin-bottom: 20px;">🛰️</div>
+      <h3 style="margin-bottom: 15px; font-size: 1.5rem;">Data Fusion</h3>
+      <p style="color: var(--text-secondary);">Satellite rainfall data, IoT river sensors, and weather APIs converge in real-time.</p>
+    </div>
+    <div class="step-card" style="background: var(--bg-card); padding: 30px; border-radius: 16px; border: 1px solid var(--border); position: relative; overflow: hidden;">
+      <div class="step-num" style="position: absolute; top: -10px; right: -10px; font-size: 8rem; font-family: 'Rajdhani'; opacity: 0.1; font-weight: 700;">2</div>
+      <div class="step-icon" style="font-size: 3rem; margin-bottom: 20px;">🤖</div>
+      <h3 style="margin-bottom: 15px; font-size: 1.5rem;">ML Prediction</h3>
+      <p style="color: var(--text-secondary);">Random Forest model analyzes 5 parameters to output hyperlocal flood risk levels.</p>
+    </div>
+    <div class="step-card" style="background: var(--bg-card); padding: 30px; border-radius: 16px; border: 1px solid var(--border); position: relative; overflow: hidden;">
+      <div class="step-num" style="position: absolute; top: -10px; right: -10px; font-size: 8rem; font-family: 'Rajdhani'; opacity: 0.1; font-weight: 700;">3</div>
+      <div class="step-icon" style="font-size: 3rem; margin-bottom: 20px;">📡</div>
+      <h3 style="margin-bottom: 15px; font-size: 1.5rem;">Instant Alerts</h3>
+      <p style="color: var(--text-secondary);">Push notifications + SMS satellite fallback ensures alerts reach you even offline.</p>
+    </div>
+    <div class="step-card" style="background: var(--bg-card); padding: 30px; border-radius: 16px; border: 1px solid var(--border); position: relative; overflow: hidden;">
+      <div class="step-num" style="position: absolute; top: -10px; right: -10px; font-size: 8rem; font-family: 'Rajdhani'; opacity: 0.1; font-weight: 700;">4</div>
+      <div class="step-icon" style="font-size: 3rem; margin-bottom: 20px;">👥</div>
+      <h3 style="margin-bottom: 15px; font-size: 1.5rem;">Community Power</h3>
+      <p style="color: var(--text-secondary);">Crowdsourced flood sightings feed back into predictions for higher accuracy.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES SHOWCASE -->
+<section class="features" style="padding: 100px 5%; background: rgba(0,0,0,0.2);">
+  <div class="feature-row" style="display: flex; flex-wrap: wrap; gap: 60px; max-width: 1200px; margin: 0 auto; align-items: center;">
+    <div class="feature-visual" style="flex: 1; min-width: 300px; border: 1px solid var(--accent-cyan); border-radius: 12px; padding: 4px; background: var(--bg-card);">
+      <!-- Mini map preview -->
+      <div id="preview-map" style="height:350px;border-radius:10px;"></div>
+    </div>
+    <div class="feature-text" style="flex: 1; min-width: 300px;">
+      <h2 style="font-size: 2.5rem; margin-bottom: 20px; color: var(--accent-cyan);">Live Flood Intelligence Maps</h2>
+      <p style="color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 30px;">Interactive Leaflet maps show flood-prone zones, safe evacuation routes, nearest shelters, and real-time community reports — all in one view.</p>
+      <ul class="feature-list" style="list-style: none; display: flex; flex-direction: column; gap: 15px; font-size: 1.1rem;">
+        <li>✅ Flood zone overlays (High/Medium/Low)</li>
+        <li>✅ Safe route navigation</li>
+        <li>✅ Shelter locations with capacity</li>
+        <li>✅ Crowdsourced flood sightings</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- CTA SECTION -->
+<section class="cta-section" style="padding: 100px 20px; text-align: center; background: radial-gradient(circle at center, rgba(0, 212, 255, 0.1), transparent);">
+  <h2 style="font-size: 3.5rem; margin-bottom: 20px;">Don't wait for the flood.</h2>
+  <p style="font-size: 1.3rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto 40px auto;">Join thousands who stay ahead with AquaAlert's AI early warning system.</p>
+  <a href="/signup" class="btn-primary btn-xl" style="box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);">Create Free Account →</a>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer" style="padding: 60px 20px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); color: var(--text-secondary);">
+  <div class="footer-brand" style="font-size: 1.5rem; font-family: 'Rajdhani'; font-weight: 700; color: white; margin-bottom: 10px;">💧 AquaAlert</div>
+  <p>AI-Powered Flood Intelligence · Built for Climate Resilience</p>
+  <p class="footer-note" style="margin-top: 30px; font-size: 0.8rem; opacity: 0.5;">Demo version · Hackathon Project · Data may be simulated</p>
+</footer>
+
+<script src="/static/js/map.js"></script>
+<script>
+// Preview map on landing
+document.addEventListener('DOMContentLoaded', () => {
+    const previewMap = L.map('preview-map', {zoomControl: false, dragging: false}).setView([19.076, 72.877], 11);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {attribution: ''}).addTo(previewMap);
+    // Add preview markers
+    loadFloodZones(previewMap);
+});
+</script>
+{% endblock %}

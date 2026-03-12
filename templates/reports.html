@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-container">
+  <div class="page-header">
+    <h1>Community Flood Reports</h1>
+    <p>Crowdsourced intelligence saves lives. See what's happening or report an incident.</p>
+  </div>
+
+  <div class="reports-layout">
+    <!-- Submit Report Form -->
+    <div class="report-submit-section card" style="align-self: start; position: sticky; top: 90px;">
+      <h2 style="margin-bottom: 20px; font-size: 1.5rem;">Submit a Report</h2>
+      
+      <div class="form-group">
+        <label>Severity Level</label>
+        <select id="report-severity" required>
+          <option value="minor">🟢 Minor (Ankle Deep / Small Puddles)</option>
+          <option value="waterlogging">🟠 Waterlogging (Knee Deep / Driveable with caution)</option>
+          <option value="severe">🔴 Severe (Waist Deep+ / Impassable)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Location</label>
+        <div class="location-row">
+          <div style="display:flex;gap:10px;">
+            <input type="text" id="report-lat" placeholder="Latitude" readonly required>
+            <input type="text" id="report-lng" placeholder="Longitude" readonly required>
+          </div>
+          <button type="button" class="btn-outline btn-sm" id="get-location-btn" style="width: 100%;">
+            📍 Get Current Location
+          </button>
+        </div>
+        <small style="color:var(--text-secondary); margin-top:5px; display:block;">Or use the <a href="/map" style="color:var(--accent-cyan); text-decoration:underline;">Live Map</a> to select a specific point.</small>
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="report-description" rows="4" placeholder="Specific details (e.g., 'Main road blocked, water rising quickly...')" required></textarea>
+      </div>
+
+      <button id="submit-report-btn" class="btn-primary btn-full">Submit Report</button>
+    </div>
+
+    <!-- Live Feed -->
+    <div class="feed-section">
+      <div class="feed-header">
+        <h2 style="font-size: 1.5rem;">Live Feed (<span id="feed-count">{{ reports|length }}</span>)</h2>
+        <div class="filter-tabs">
+          <button class="tab active" data-filter="all">All</button>
+          <button class="tab" data-filter="severe">Severe</button>
+          <button class="tab" data-filter="waterlogging">Waterlogging</button>
+        </div>
+      </div>
+
+      <div id="reports-feed">
+        {% for report in reports %}
+        <div class="report-card severity-{{ report.severity }}" data-severity="{{ report.severity }}">
+          <div class="report-top">
+            <span class="severity-badge {{ report.severity }}">{{ report.severity.upper() }}</span>
+            {% if report.verified %}
+            <span class="verified-badge" title="Verified by multiple users or sensors">✅ Verified</span>
+            {% endif %}
+            <span class="report-time">{{ report.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+          </div>
+          <div class="report-body">
+            {{ report.description }}
+          </div>
+          <div class="report-footer">
+            <span class="coords">📍 {{ "%.4f"|format(report.lat) }}, {{ "%.4f"|format(report.lng) }}</span>
+            <button class="upvote-btn" data-id="{{ report.id }}">
+              👍 <span class="upvote-count">{{ report.upvotes }}</span>
+            </button>
+          </div>
+        </div>
+        {% else %}
+        <div class="glass" style="padding: 40px; text-align: center; border-radius: 12px; color: var(--text-secondary);">
+          No reports in your area yet. Stay safe!
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Location fetching
+  document.getElementById('get-location-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('get-location-btn');
+    btn.textContent = 'Locating...';
+    try {
+      const pos = await getPosition();
+      document.getElementById('report-lat').value = pos.lat.toFixed(6);
+      document.getElementById('report-lng').value = pos.lng.toFixed(6);
+      btn.textContent = '✅ Location Found';
+      setTimeout(() => btn.textContent = '📍 Update Location', 2000);
+    } catch(e) {
+      btn.textContent = '❌ Failed';
+      setTimeout(() => btn.textContent = '📍 Get Current Location', 2000);
+    }
+  });
+
+  // Submission
+  document.getElementById('submit-report-btn').addEventListener('click', async () => {
+    const lat = parseFloat(document.getElementById('report-lat').value);
+    const lng = parseFloat(document.getElementById('report-lng').value);
+    const severity = document.getElementById('report-severity').value;
+    const desc = document.getElementById('report-description').value.trim();
+
+    if (!lat || !lng || !desc) {
+      showToast('Please fill out all fields and get location.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('submit-report-btn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+
+    try {
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat, lng, severity, description: desc })
+      });
+      
+      if (res.ok) {
+        showToast('Report submitted successfully.', 'success');
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        throw new Error('Failed');
+      }
+    } catch(e) {
+      showToast('Error submitting report. Might be offline.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Submit Report';
+    }
+  });
+
+  // Upvoting
+  document.querySelectorAll('.upvote-btn').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      if (this.classList.contains('voted')) return;
+      const id = this.dataset.id;
+      
+      try {
+        const res = await fetch(`/api/reports/${id}/upvote`, {method: 'POST'});
+        if (res.ok) {
+          const data = await res.json();
+          this.querySelector('.upvote-count').textContent = data.upvotes;
+          this.classList.add('voted');
+          this.style.background = 'var(--accent-cyan)';
+          this.style.color = 'var(--bg-primary)';
+          showToast('Upvoted!', 'success');
+        }
+      } catch(e) {
+        console.error(e);
+      }
+    });
+  });
+
+  // Filtering
+  document.querySelectorAll('.filter-tabs .tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.filter-tabs .tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      
+      const filter = this.dataset.filter;
+      let count = 0;
+      
+      document.querySelectorAll('.report-card').forEach(card => {
+        if (filter === 'all' || card.dataset.severity === filter) {
+          card.style.display = 'block';
+          count++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+      
+      document.getElementById('feed-count').textContent = count;
+    });
+  });
+});
+</script>
+{% endblock %}

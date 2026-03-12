@@ -2,20 +2,20 @@
 {% block content %}
 <div class="map-page">
   <div class="map-controls">
-    <h2>🗺️ Live Flood Intelligence Map</h2>
+    <h2>{{ _('map_layers') }}</h2>
     <div class="layer-toggles">
-      <label class="toggle"><input type="checkbox" id="toggle-zones" checked> Flood Risk Zones</label>
-      <label class="toggle"><input type="checkbox" id="toggle-shelters" checked> Shelters & Relief</label>
-      <label class="toggle"><input type="checkbox" id="toggle-reports" checked> Community Reports</label>
-      <label class="toggle"><input type="checkbox" id="toggle-routes" checked> Safe Routes</label>
+      <label class="toggle"><input type="checkbox" id="toggle-zones" checked><span>{{ _('flood_risk_zones') }}</span></label>
+      <label class="toggle"><input type="checkbox" id="toggle-shelters" checked><span>{{ _('shelters') }}</span></label>
+      <label class="toggle"><input type="checkbox" id="toggle-reports" checked><span>{{ _('realtime_reports') }}</span></label>
+      <label class="toggle"><input type="checkbox" id="toggle-routes" checked><span>{{ _('evacuation_routes') }}</span></label>
       <label class="toggle"><input type="checkbox" id="toggle-sensors" checked> IoT Sensors</label>
     </div>
     <div class="legend">
-      <div class="legend-item"><span class="dot" style="background:var(--alert-red)"></span> High Risk Zone</div>
-      <div class="legend-item"><span class="dot" style="background:var(--alert-orange)"></span> Medium Risk</div>
-      <div class="legend-item"><span class="dot" style="background:#FFFF00"></span> Low Risk</div>
+      <div class="legend-item"><span class="dot" style="background:var(--alert-red)"></span> {{ _('high_risk_zone') }}</div>
+      <div class="legend-item"><span class="dot" style="background:var(--alert-orange)"></span> {{ _('medium_risk_zone') }}</div>
+      <div class="legend-item"><span class="dot" style="background:var(--alert-green)"></span> {{ _('low_risk_zone') }}</div>
       <div class="legend-item"><span class="dot" style="background:transparent;border:1px solid white;">🏠</span> Shelter</div>
-      <div class="legend-item"><span class="route-line"></span> Safe Route</div>
+      <div class="legend-item"><span class="route-line"></span> {{ _('safe_evacuation_route') }}</div>
     </div>
     <button class="btn-primary" id="report-mode-btn" style="width:100%; margin-top:10px;">📍 Point Extractor / Report</button>
     <div id="report-form-inline" class="report-form-inline hidden">

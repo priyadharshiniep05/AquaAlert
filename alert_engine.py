@@ -76,3 +76,35 @@ class AlertEngine:
         dlng = math.radians(lng2 - lng1)
         a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng/2)**2
         return R * 2 * math.asin(math.sqrt(a)) <= radius_km
+
+    def _compose_report_message(self, severity, location="your area"):
+        messages = {
+            'severe': f"🚨 AQUAALERT USER REPORT: SEVERE conditions reported in {location}. Please exercise extreme caution.",
+            'waterlogging': f"⚠️ AQUAALERT USER REPORT: Waterlogging reported in {location}. Avoid this area if possible.",
+            'minor': f"ℹ️ AQUAALERT USER REPORT: Minor issues reported in {location}. Stay alert."
+        }
+        return messages.get(severity.lower(), messages['minor'])
+
+    def broadcast_report_alert(self, severity, lat, lng, radius_km=5):
+        """Broadcast a user-submitted report alert to users within radius"""
+        with self.app.app_context():
+            users = User.query.filter_by(sms_opted_in=True).all()
+            alerted = 0
+            for user in users:
+                if self._is_within_radius(user.lat, user.lng, lat, lng, radius_km):
+                    message = self._compose_report_message(severity)
+                    if user.phone:
+                        sms_sent = self.send_sms(user.phone, message)
+                    else:
+                        sms_sent = False
+                    alert = Alert(
+                        user_id=user.id,
+                        severity=severity.upper(), # Map 'severe' to 'SEVERE' etc in Alert table
+                        message=message,
+                        sent_sms=sms_sent,
+                        sent_push=True # Assuming push is handled by PWA generic logic
+                    )
+                    db.session.add(alert)
+                    alerted += 1
+            db.session.commit()
+            return alerted

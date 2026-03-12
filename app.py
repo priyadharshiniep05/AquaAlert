@@ -23,7 +23,28 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 predictor = FloodPredictor()
-alert_engine = None  # initialized after app context
+alert_engine = AlertEngine(app)
+
+# ─── Localization ───────────────────────────────────────────
+TRANSLATIONS = {}
+try:
+    with open('data/translations.json', 'r', encoding='utf-8') as f:
+        TRANSLATIONS = json.load(f)
+except Exception as e:
+    print(f"Error loading translations: {e}")
+
+@app.context_processor
+def inject_translate():
+    def translate(key):
+        lang = session.get('lang', 'en')
+        return TRANSLATIONS.get(lang, TRANSLATIONS.get('en', {})).get(key, key)
+    return dict(_=translate, current_lang=session.get('lang', 'en'))
+
+@app.route('/set-language/<lang>')
+def set_language(lang):
+    if lang in TRANSLATIONS:
+        session['lang'] = lang
+    return redirect(request.referrer or url_for('index'))
 
 OPENWEATHER_KEY = os.getenv('OPENWEATHER_API_KEY', '')
 
@@ -74,6 +95,7 @@ def simulate_iot_sensors():
     return [{'sensor_id': s['id'], 'lat': s['lat'], 'lng': s['lng'], 
              'name': s['name'], 'water_level_cm': round(random.uniform(5, 180), 1),
              'flow_rate': round(random.uniform(0.1, 5.0), 2),
+             'battery': random.randint(40, 100),
              'timestamp': datetime.utcnow().isoformat()} for s in sensor_locations]
 
 def get_flood_zones():
@@ -131,7 +153,7 @@ def signup():
             password_hash=generate_password_hash(data['password']),
             lat=float(data.get('lat', 19.0760)),
             lng=float(data.get('lng', 72.8777)),
-            sms_opted_in=bool(data.get('sms_optin'))
+            sms_opted_in=True # SMS is mandatory
         )
         db.session.add(user)
         db.session.commit()
@@ -145,10 +167,53 @@ def login():
     if request.method == 'POST':
         user = User.query.filter_by(email=request.form['email']).first()
         if user and check_password_hash(user.password_hash, request.form['password']):
-            login_user(user)
-            return redirect(url_for('dashboard'))
+            # Generate 6-digit OTP
+            otp = str(random.randint(100000, 999999))
+            session['otp'] = otp
+            session['otp_user_id'] = user.id
+            session['otp_expiry'] = (datetime.utcnow() + timedelta(minutes=5)).timestamp()
+            
+            # Send SMS OTP
+            if user.phone:
+                msg = f"Your AquaAlert Login OTP is: {otp}. Valid for 5 minutes."
+                alert_engine.send_sms(user.phone, msg)
+            
+            # Print to console for demo/dev purposes
+            print(f"[AUTH OTP] User: {user.email} | OTP: {otp}")
+            
+            flash('An OTP has been sent to your phone and email.', 'info')
+            return redirect(url_for('verify_otp'))
+            
         flash('Invalid credentials.', 'error')
     return render_template('login.html')
+
+@app.route('/verify-otp', methods=['GET', 'POST'])
+def verify_otp():
+    if 'otp_user_id' not in session:
+        return redirect(url_for('login'))
+        
+    if request.method == 'POST':
+        entered_otp = request.form.get('otp')
+        stored_otp = session.get('otp')
+        expiry = session.get('otp_expiry')
+        
+        if not stored_otp or not expiry or datetime.utcnow().timestamp() > expiry:
+            flash('OTP expired or invalid. Please login again.', 'error')
+            return redirect(url_for('login'))
+            
+        if entered_otp == stored_otp:
+            user = User.query.get(session['otp_user_id'])
+            login_user(user)
+            # Clear OTP session data
+            session.pop('otp', None)
+            session.pop('otp_user_id', None)
+            session.pop('otp_expiry', None)
+            flash('Successfully verified and logged in!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid OTP. Please try again.', 'error')
+            
+    return render_template('verify_otp.html')
 
 @app.route('/logout')
 @login_required
@@ -184,11 +249,16 @@ def reports():
 @app.route('/preparedness')
 @login_required
 def preparedness():
-    with open('data/shelters.json') as f:
-        shelters = json.load(f)
-    with open('data/emergency_contacts.json') as f:
-        contacts = json.load(f)
-    return render_template('preparedness.html', shelters=shelters, contacts=contacts)
+    try:
+        with open('data/shelters.json') as f:
+            shelters = json.load(f)
+        with open('data/emergency_contacts.json') as f:
+            contacts = json.load(f)
+        print(f"DEBUG: Loaded {len(shelters)} shelters and {len(contacts)} contacts")
+        return render_template('preparedness.html', shelters=shelters, contacts=contacts)
+    except Exception as e:
+        print(f"DEBUG ERROR: {e}")
+        return render_template('preparedness.html', shelters=[], contacts=[])
 
 # ─── API Endpoints ───────────────────────────────────────────
 
@@ -247,6 +317,15 @@ def api_safe_routes():
 def api_sensors():
     return jsonify(simulate_iot_sensors())
 
+@app.route('/api/shelters')
+def api_shelters():
+    try:
+        with open('data/shelters.json') as f:
+            shelters = json.load(f)
+        return jsonify(shelters)
+    except Exception:
+        return jsonify([])
+
 @app.route('/api/reports', methods=['GET', 'POST'])
 def api_reports():
     if request.method == 'POST':
@@ -265,18 +344,41 @@ def api_reports():
         # We can implement a cron job here or just store it. The job could export 
         # FloodReport table to CSV and retrain model with verified reports.
         
+        # Broadcast sms to nearby users based on the new report
+        import threading
+        threading.Thread(target=alert_engine.broadcast_report_alert, args=(d['severity'], d['lat'], d['lng'])).start()
+        
         return jsonify({'status': 'success', 'id': report.id})
     reports = FloodReport.query.order_by(FloodReport.timestamp.desc()).limit(50).all()
     return jsonify([{'id': r.id, 'lat': r.lat, 'lng': r.lng, 'severity': r.severity,
                      'description': r.description, 'timestamp': r.timestamp.isoformat(),
-                     'upvotes': r.upvotes, 'verified': r.verified} for r in reports])
+                     'upvotes': r.upvotes, 'downvotes': r.downvotes, 'verified': r.verified} for r in reports])
 
 @app.route('/api/reports/<int:report_id>/upvote', methods=['POST'])
 def upvote_report(report_id):
     report = FloodReport.query.get_or_404(report_id)
+    if report.upvotes is None: report.upvotes = 0
     report.upvotes += 1
     db.session.commit()
     return jsonify({'upvotes': report.upvotes})
+
+@app.route('/api/reports/<int:report_id>/downvote', methods=['POST'])
+def downvote_report(report_id):
+    report = FloodReport.query.get_or_404(report_id)
+    if report.downvotes is None: report.downvotes = 0
+    report.downvotes += 1
+    db.session.commit()
+    return jsonify({'downvotes': report.downvotes})
+
+@app.route('/api/reports/<int:report_id>', methods=['DELETE'])
+@login_required
+def delete_report(report_id):
+    report = FloodReport.query.get_or_404(report_id)
+    if report.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    db.session.delete(report)
+    db.session.commit()
+    return jsonify({'status': 'success'})
 
 @app.route('/api/alerts/send', methods=['POST'])
 @login_required
@@ -317,7 +419,22 @@ def service_worker():
 # ─── App Init ────────────────────────────────────────────────
 
 def seed_demo_data():
-    """Add mock reports for demo"""
+    """Add mock reports and demo user for demo"""
+    # Create demo user if not exists
+    if User.query.filter_by(email='demo@aquaalert.io').first() is None:
+        demo_user = User(
+            name='Demo User',
+            email='demo@aquaalert.io',
+            phone='+919876543210',
+            password_hash=generate_password_hash('hackathon2024'),
+            lat=19.0760,
+            lng=72.8777,
+            sms_opted_in=True
+        )
+        db.session.add(demo_user)
+        db.session.commit()
+        print('[SEED] Demo user created: demo@aquaalert.io / hackathon2024')
+
     if FloodReport.query.count() == 0:
         mock_reports = [
             {'lat': 19.0400, 'lng': 72.8530, 'severity': 'severe', 'description': 'Road completely flooded 3ft deep. Avoid Dharavi main road.', 'upvotes': 23, 'verified': True},
@@ -332,8 +449,7 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         seed_demo_data()
-    alert_engine = AlertEngine(app)
     scheduler = BackgroundScheduler()
     scheduler.add_job(scheduled_prediction_job, 'interval', minutes=10)
     scheduler.start()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)

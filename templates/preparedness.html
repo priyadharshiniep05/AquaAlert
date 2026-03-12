@@ -2,18 +2,19 @@
 {% block content %}
 <div class="page-container">
   <div class="page-header">
-    <h1>Emergency Preparedness</h1>
-    <p>Everything you need to stay safe before, during, and after a flood event.</p>
+    <h1>{{ _('preparedness') }}</h1>
+    <p>{{ _('flood_safety_prep') }}</p>
   </div>
 
   <div class="prep-tabs">
-    <button class="prep-tab active" data-target="shelters">Relief Camps & Shelters</button>
-    <button class="prep-tab" data-target="contacts">Emergency Contacts</button>
-    <button class="prep-tab" data-target="checklist">Survival Checklist</button>
+    <button class="prep-tab active" data-tab="contacts">{{ _('emergency_contacts') }}</button>
+    <button class="prep-tab" data-tab="shelters">{{ _('shelters') }}</button>
+    <button class="prep-tab" data-tab="checklist">{{ _('safety_checklist') }}</button>
+    <button class="prep-tab" data-tab="iot">{{ _('iot_sensors') }}</button>
   </div>
 
   <!-- Shelters Tab -->
-  <div id="tab-shelters" class="tab-content">
+  <div id="tab-shelters" class="tab-content hidden">
     <div class="shelters-grid">
       {% for s in shelters %}
       <div class="shelter-card">
@@ -36,7 +37,7 @@
   </div>
 
   <!-- Contacts Tab -->
-  <div id="tab-contacts" class="tab-content hidden">
+  <div id="tab-contacts" class="tab-content">
     <div class="contacts-grid">
       {% for c in contacts %}
       <div class="contact-card">
@@ -62,7 +63,7 @@
   <div id="tab-checklist" class="tab-content hidden">
     <div class="checklist-grid">
       <div class="checklist-card">
-        <h3>Emergency Kit 🎒</h3>
+        <h3>{{ _('emergency_kit') }}</h3>
         <div class="checklist">
           <label><input type="checkbox"> 3-day supply of non-perishable food</label>
           <label><input type="checkbox"> 3 gallons of water per person</label>
@@ -95,6 +96,15 @@
       </div>
     </div>
   </div>
+  <!-- IoT Sensors Tab -->
+  <div id="tab-iot" class="tab-content hidden">
+    <div class="sensor-grid" id="iot-sensor-grid">
+      <!-- To be filled by JS -->
+      <div class="glass" style="grid-column: 1/-1; padding: 40px; text-align: center; border-radius: 12px; color: var(--text-secondary);">
+        Fetching real-time sensor data...
+      </div>
+    </div>
+  </div>
 
 </div>
 {% endblock %}
@@ -106,8 +116,50 @@ document.querySelectorAll('.prep-tab').forEach(tab => {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
     
     tab.classList.add('active');
-    document.getElementById(`tab-${tab.dataset.target}`).classList.remove('hidden');
+    const targetTab = tab.dataset.tab;
+    document.getElementById(`tab-${targetTab}`).classList.remove('hidden');
+    
+    if (targetTab === 'iot') {
+      loadIoTSensors();
+    }
   });
 });
+
+async function loadIoTSensors() {
+  const grid = document.getElementById('iot-sensor-grid');
+  try {
+    const res = await fetch('/api/sensors');
+    const sensors = await res.json();
+    
+    if (sensors.length === 0) {
+      grid.innerHTML = '<div class="glass" style="grid-column: 1/-1; padding: 40px; text-align: center; border-radius: 12px; color: var(--text-secondary);">No sensors active in your area.</div>';
+      return;
+    }
+    
+    grid.innerHTML = sensors.map(s => `
+      <div class="iot-card">
+        <div class="iot-header">
+          <div class="sensor-name" style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.2rem;">${s.name}</div>
+          <div class="live-badge" style="font-size: 0.75rem;">● LIVE</div>
+        </div>
+        <div class="sensor-id">ID: ${s.sensor_id}</div>
+        <div class="iot-status ${s.water_level_cm > 100 ? 'critical' : s.water_level_cm > 50 ? 'warning' : 'normal'}">
+          ${s.water_level_cm > 100 ? '🚨 CRITICAL' : s.water_level_cm > 50 ? '⚠️ WARNING' : '✅ NORMAL'}
+        </div>
+        <div class="iot-metric">
+          <span>Water Level</span>
+          <span class="metric-value">${s.water_level_cm} cm</span>
+        </div>
+        <div class="iot-metric">
+          <span>Battery</span>
+          <span class="metric-value">${s.battery}%</span>
+        </div>
+        <div class="iot-time">Updated: Just now</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    grid.innerHTML = '<div class="glass" style="grid-column: 1/-1; padding: 40px; text-align: center; border-radius: 12px; color: var(--text-secondary);">Error fetching sensor data. Please check back later.</div>';
+  }
+}
 </script>
 {% endblock %}

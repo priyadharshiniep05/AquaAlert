@@ -4,38 +4,38 @@
   <div class="auth-container">
     <div class="auth-card">
       <div class="auth-logo">💧 AquaAlert</div>
-      <h2>Create Account</h2>
-      <p class="auth-subtitle">Join the community network for early warnings.</p>
+      <h2>{{ _('create_account') }}</h2>
+      <p class="auth-subtitle">Join the community flood network for early warnings.</p>
       
       <form method="POST" action="/signup">
         <div class="form-group">
-          <label>Full Name</label>
-          <input type="text" name="name" placeholder="John Doe" required>
+          <label>{{ _('full_name') }}</label>
+          <input type="text" name="name" required placeholder="John Doe">
         </div>
         <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" name="email" placeholder="john@example.com" required>
+          <label>{{ _('email_address') }}</label>
+          <input type="email" name="email" required placeholder="john@example.com">
         </div>
         <div class="form-group">
-          <label>Phone Number (For SMS Alerts)</label>
-          <input type="tel" name="phone" placeholder="+91 9876543210" required>
+          <label>{{ _('phone_number') }}</label>
+          <input type="tel" name="phone" required placeholder="+91 98765 43210">
           <small style="color:var(--text-secondary); margin-top:4px; display:block;">Include country code. Crucial for offline satellite alerts.</small>
         </div>
         <div class="form-group">
-          <label>Password</label>
-          <input type="password" name="password" placeholder="••••••••" required minlength="6">
+          <label>{{ _('password') }}</label>
+          <input type="password" name="password" required placeholder="••••••••" minlength="6">
         </div>
         
         <div class="checkbox-group">
-          <input type="checkbox" id="terms" required>
-          <label for="terms">I agree to receive emergency SMS and Push notification alerts from AquaAlert. Standard message rates may apply.</label>
+          <input type="checkbox" id="terms" required checked disabled>
+          <label for="terms">{{ _('terms_agree') }}</label>
         </div>
 
-        <button type="submit" class="btn-primary btn-full">Create Account</button>
+        <button type="submit" class="btn-primary btn-full">{{ _('get_started') }}</button>
       </form>
       
       <div class="auth-footer">
-        Already have an account? <a href="/login">Log in here</a>.
+        {{ _('already_have_account') }} <a href="/login">{{ _('login_here') }}</a>
       </div>
     </div>
     <div class="auth-visual">

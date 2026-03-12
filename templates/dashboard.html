@@ -15,27 +15,27 @@
     </div>
     
     <div class="sidebar-section">
-      <h3 class="sidebar-label">Current Conditions</h3>
+      <h3 class="sidebar-label">{{ _('current_conditions') }}</h3>
       <div class="condition-item">
-        <span>🌧️ Rainfall</span>
+        <span>🌧️ {{ _('rainfall') }}</span>
         <span id="sidebar-rainfall" class="value">--mm/hr</span>
       </div>
       <div class="condition-item">
-        <span>💧 River Level</span>
+        <span>💧 {{ _('river_level') }}</span>
         <span id="sidebar-river" class="value">--m</span>
       </div>
       <div class="condition-item">
-        <span>🌡️ Temperature</span>
+        <span>🌡️ {{ _('temperature') }}</span>
         <span id="sidebar-temp" class="value">--°C</span>
       </div>
       <div class="condition-item">
-        <span>💨 Humidity</span>
+        <span>💨 {{ _('humidity') }}</span>
         <span id="sidebar-humidity" class="value">--%</span>
       </div>
     </div>
 
     <div class="sidebar-section">
-      <h3 class="sidebar-label">IoT Sensors</h3>
+      <h3 class="sidebar-label">{{ _('iot_sensors') }}</h3>
       <div id="sensor-list">
         {% for s in sensors %}
         <div class="sensor-item">
@@ -54,9 +54,9 @@
     <!-- Risk Banner -->
     <div id="main-risk-card" class="risk-card">
       <div class="risk-left">
-        <div class="risk-label">FLOOD RISK LEVEL</div>
-        <div id="risk-level-display" class="risk-level-text">CALCULATING...</div>
-        <div id="risk-description" class="risk-desc">Fetching real-time data...</div>
+        <div class="risk-label">{{ _('flood_risk_level') }}</div>
+        <div id="risk-level-display" class="risk-level-text">{{ _('calculating') }}</div>
+        <div id="risk-description" class="risk-desc">{{ _('fetching_data') }}</div>
       </div>
       <div class="risk-right" style="position: relative; width: 140px; height: 140px;">
         <canvas id="risk-gauge"></canvas>
@@ -68,33 +68,33 @@
       <div class="stat-card">
         <div class="stat-icon">🌧️</div>
         <div class="stat-value" id="stat-rainfall">--</div>
-        <div class="stat-label">mm/hr Rainfall</div>
+        <div class="stat-label">{{ _('rainfall') }}</div>
       </div>
       <div class="stat-card">
         <div class="stat-icon">📊</div>
         <div class="stat-value" id="stat-risk-score">--</div>
-        <div class="stat-label">% Risk Score</div>
+        <div class="stat-label">{{ _('risk_score') }}</div>
       </div>
       <div class="stat-card">
         <div class="stat-icon">👥</div>
         <div class="stat-value" id="stat-reports">{{ reports|length }}</div>
-        <div class="stat-label">Community Reports</div>
+        <div class="stat-label">{{ _('community_reports') }}</div>
       </div>
       <div class="stat-card">
         <div class="stat-icon">🛡️</div>
         <div class="stat-value">5</div>
-        <div class="stat-label">Active Sensors</div>
+        <div class="stat-label">{{ _('active_sensors') }}</div>
       </div>
     </div>
 
     <!-- Charts Row -->
     <div class="charts-grid">
       <div class="chart-card">
-        <h3>Rainfall vs Flood Risk (24h)</h3>
+        <h3>{{ _('rainfall_vs_risk') }}</h3>
         <div style="height: 250px;"><canvas id="rainfall-chart"></canvas></div>
       </div>
       <div class="chart-card">
-        <h3>Water Level Sensors</h3>
+        <h3>{{ _('water_level_sensors') }}</h3>
         <div style="height: 250px;"><canvas id="sensor-chart"></canvas></div>
       </div>
     </div>
@@ -103,15 +103,15 @@
     <div class="bottom-grid">
       <div class="card">
         <div class="card-header">
-          <h3>Live Map</h3>
-          <a href="/map" class="btn-sm btn-outline">Full Map →</a>
+          <h3>{{ _('live_map') }}</h3>
+          <a href="/map" class="btn-sm btn-outline">{{ _('full_map') }}</a>
         </div>
         <div id="mini-map" style="height:320px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);"></div>
       </div>
       <div class="card" style="display:flex; flex-direction: column;">
         <div class="card-header">
-          <h3>Recent Reports</h3>
-          <a href="/reports" class="btn-sm btn-outline">Submit Report →</a>
+          <h3>{{ _('community_reports') }}</h3>
+          <a href="/reports" class="btn-sm btn-outline">{{ _('submit_report') }}</a>
         </div>
         <div class="reports-list" style="flex: 1; overflow-y: auto;">
           {% for report in reports %}
@@ -122,11 +122,11 @@
             </div>
             <div class="report-desc">{{ report.description[:80] }}{% if report.description|length > 80 %}...{% endif %}</div>
             <div class="report-meta" style="margin-top:auto;">
-              {{ report.timestamp.strftime('%H:%M') }} · 👍 {{ report.upvotes }}
+              {{ report.timestamp.strftime('%H:%M') }} · 👍 {{ report.upvotes }} · 👎 {{ report.downvotes }}
             </div>
           </div>
           {% else %}
-          <div style="text-align:center; padding: 40px; color: var(--text-secondary);">No recent reports.</div>
+          <div style="text-align:center; padding: 40px; color: var(--text-secondary);">{{ _('no_recent_reports') }}</div>
           {% endfor %}
         </div>
       </div>

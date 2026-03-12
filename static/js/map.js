@@ -54,19 +54,22 @@ async function loadFloodZones(map) {
 
 async function loadShelters(map) {
   try {
-    const res = await fetch('/preparedness'); // Hack to get from HTML if needed, but we'll fetch JSON directly
-    const shelters = await fetch('/data/shelters.json') // We'll serve this from static or simulate it
-                     .catch(() => [
-                        {"id": 1, "name": "Dharavi Relief Center", "lat": 19.0400, "lng": 72.8660, "capacity": 500, "type": "primary", "contact": "+91-22-24041234", "facilities": ["Water", "Food", "Medical", "Cots"]},
-                        {"id": 2, "name": "Sion Government School", "lat": 19.0440, "lng": 72.8633, "capacity": 300, "type": "secondary", "contact": "+91-22-24045678", "facilities": ["Water", "Food", "Cots"]},
-                        {"id": 3, "name": "BKC Sports Complex", "lat": 19.0653, "lng": 72.8647, "capacity": 1000, "type": "primary", "contact": "+91-22-26591234", "facilities": ["Water", "Food", "Medical", "Cots", "WiFi"]},
-                        {"id": 4, "name": "Kurla Municipal Hall", "lat": 19.0700, "lng": 72.8800, "capacity": 250, "type": "secondary", "contact": "+91-22-25010000", "facilities": ["Water", "Food"]},
-                        {"id": 5, "name": "Andheri Sports Club", "lat": 19.1136, "lng": 72.8397, "capacity": 400, "type": "primary", "contact": "+91-22-26831234", "facilities": ["Water", "Food", "Medical"]}
-                     ]);
+    let data;
+    try {
+      const res = await fetch('/api/shelters');
+      data = await res.json();
+    } catch(e) {
+      data = [
+        {"id": 1, "name": "Dharavi Relief Center", "lat": 19.0400, "lng": 72.8660, "capacity": 500, "type": "primary", "contact": "+91-22-24041234", "facilities": ["Water", "Food", "Medical", "Cots"]},
+        {"id": 2, "name": "Sion Government School", "lat": 19.0440, "lng": 72.8633, "capacity": 300, "type": "secondary", "contact": "+91-22-24045678", "facilities": ["Water", "Food", "Cots"]},
+        {"id": 3, "name": "BKC Sports Complex", "lat": 19.0653, "lng": 72.8647, "capacity": 1000, "type": "primary", "contact": "+91-22-26591234", "facilities": ["Water", "Food", "Medical", "Cots", "WiFi"]},
+        {"id": 4, "name": "Kurla Municipal Hall", "lat": 19.0700, "lng": 72.8800, "capacity": 250, "type": "secondary", "contact": "+91-22-25010000", "facilities": ["Water", "Food"]},
+        {"id": 5, "name": "Andheri Sports Club", "lat": 19.1136, "lng": 72.8397, "capacity": 400, "type": "primary", "contact": "+91-22-26831234", "facilities": ["Water", "Food", "Medical"]}
+      ];
+    }
     
-    // Create a mock if fetch fails
-    const data = Array.isArray(shelters) ? shelters : await shelters.json();
-    
+    if (!data || data.length === 0) return [];
+
     const shelterIcon = L.divIcon({
       html: '🏠',
       className: 'shelter-marker-icon',
@@ -115,7 +118,7 @@ async function loadCommunityReports(map) {
           <b>${r.severity.toUpperCase()}</b><br>
           ${r.description}<br>
           <small>${new Date(r.timestamp).toLocaleTimeString()}</small><br>
-          👍 ${r.upvotes}
+          👍 ${r.upvotes} · 👎 ${r.downvotes}
         </div>
       `);
       layers.push(m);

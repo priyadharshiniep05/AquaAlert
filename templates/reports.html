@@ -2,54 +2,54 @@
 {% block content %}
 <div class="page-container">
   <div class="page-header">
-    <h1>Community Flood Reports</h1>
-    <p>Crowdsourced intelligence saves lives. See what's happening or report an incident.</p>
+    <h1>{{ _('community_flood_reports') }}</h1>
+    <p>{{ _('crowdsourced_intelligence_saves_lives') }}</p>
   </div>
 
   <div class="reports-layout">
     <!-- Submit Report Form -->
     <div class="report-submit-section card" style="align-self: start; position: sticky; top: 90px;">
-      <h2 style="margin-bottom: 20px; font-size: 1.5rem;">Submit a Report</h2>
+      <h2 style="margin-bottom: 20px; font-size: 1.5rem;">{{ _('submit_a_report') }}</h2>
       
       <div class="form-group">
-        <label>Severity Level</label>
+        <label>{{ _('severity_level') }}</label>
         <select id="report-severity" required>
-          <option value="minor">🟢 Minor (Ankle Deep / Small Puddles)</option>
-          <option value="waterlogging">🟠 Waterlogging (Knee Deep / Driveable with caution)</option>
-          <option value="severe">🔴 Severe (Waist Deep+ / Impassable)</option>
+          <option value="minor">🟢 {{ _('minor_severity') }}</option>
+          <option value="waterlogging">🟠 {{ _('waterlogging_severity') }}</option>
+          <option value="severe">🔴 {{ _('severe_severity') }}</option>
         </select>
       </div>
 
       <div class="form-group">
-        <label>Location</label>
+        <label>{{ _('location') }}</label>
         <div class="location-row">
           <div style="display:flex;gap:10px;">
-            <input type="text" id="report-lat" placeholder="Latitude" readonly required>
-            <input type="text" id="report-lng" placeholder="Longitude" readonly required>
+            <input type="text" id="report-lat" placeholder="{{ _('latitude') }}" readonly required>
+            <input type="text" id="report-lng" placeholder="{{ _('longitude') }}" readonly required>
           </div>
           <button type="button" class="btn-outline btn-sm" id="get-location-btn" style="width: 100%;">
-            📍 Get Current Location
+            📍 {{ _('get_current_location') }}
           </button>
         </div>
-        <small style="color:var(--text-secondary); margin-top:5px; display:block;">Or use the <a href="/map" style="color:var(--accent-cyan); text-decoration:underline;">Live Map</a> to select a specific point.</small>
+        <small style="color:var(--text-secondary); margin-top:5px; display:block;">{{ _('or_use_the') }} <a href="/map" style="color:var(--accent-cyan); text-decoration:underline;">{{ _('live_map') }}</a> {{ _('to_select_a_specific_point') }}.</small>
       </div>
 
       <div class="form-group">
-        <label>Description</label>
-        <textarea id="report-description" rows="4" placeholder="Specific details (e.g., 'Main road blocked, water rising quickly...')" required></textarea>
+        <label>{{ _('description') }}</label>
+        <textarea id="report-description" rows="4" placeholder="{{ _('specific_details_placeholder') }}" required></textarea>
       </div>
 
-      <button id="submit-report-btn" class="btn-primary btn-full">Submit Report</button>
+      <button id="submit-report-btn" class="btn-primary btn-full">{{ _('submit_report') }}</button>
     </div>
 
     <!-- Live Feed -->
     <div class="feed-section">
       <div class="feed-header">
-        <h2 style="font-size: 1.5rem;">Live Feed (<span id="feed-count">{{ reports|length }}</span>)</h2>
+        <h2 style="font-size: 1.5rem;">{{ _('live_feed') }} (<span id="feed-count">{{ reports|length }}</span>)</h2>
         <div class="filter-tabs">
-          <button class="tab active" data-filter="all">All</button>
-          <button class="tab" data-filter="severe">Severe</button>
-          <button class="tab" data-filter="waterlogging">Waterlogging</button>
+          <button class="tab active" data-filter="all">{{ _('all') }}</button>
+          <button class="tab" data-filter="severe">{{ _('severe') }}</button>
+          <button class="tab" data-filter="waterlogging">{{ _('waterlogging') }}</button>
         </div>
       </div>
 
@@ -68,9 +68,19 @@
           </div>
           <div class="report-footer">
             <span class="coords">📍 {{ "%.4f"|format(report.lat) }}, {{ "%.4f"|format(report.lng) }}</span>
-            <button class="upvote-btn" data-id="{{ report.id }}">
-              👍 <span class="upvote-count">{{ report.upvotes }}</span>
-            </button>
+            <div class="report-actions" style="display: flex; gap: 8px;">
+              <button class="upvote-btn" data-id="{{ report.id }}" title="Verified">
+                👍 <span class="upvote-count">{{ report.upvotes }}</span>
+              </button>
+              <button class="downvote-btn" data-id="{{ report.id }}" title="{{ _('resolved') }}">
+                👎 <span class="downvote-count">{{ report.downvotes }}</span>
+              </button>
+              {% if current_user.is_authenticated and report.user_id == current_user.id %}
+              <button class="delete-report-btn btn-ghost btn-sm" data-id="{{ report.id }}" style="color: var(--accent-orange); border-color: var(--accent-orange);">
+                🗑️ {{ _('delete') }}
+              </button>
+              {% endif %}
+            </div>
           </div>
         </div>
         {% else %}
@@ -138,24 +148,47 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Upvoting
-  document.querySelectorAll('.upvote-btn').forEach(btn => {
+  // Upvoting & Downvoting
+  document.querySelectorAll('.upvote-btn, .downvote-btn').forEach(btn => {
     btn.addEventListener('click', async function() {
       if (this.classList.contains('voted')) return;
       const id = this.dataset.id;
+      const type = this.classList.contains('upvote-btn') ? 'upvote' : 'downvote';
       
       try {
-        const res = await fetch(`/api/reports/${id}/upvote`, {method: 'POST'});
+        const res = await fetch(`/api/reports/${id}/${type}`, {method: 'POST'});
         if (res.ok) {
           const data = await res.json();
-          this.querySelector('.upvote-count').textContent = data.upvotes;
+          this.querySelector(`.${type}-count`).textContent = data[type + 's'];
           this.classList.add('voted');
-          this.style.background = 'var(--accent-cyan)';
+          this.style.background = type === 'upvote' ? 'var(--accent-cyan)' : 'var(--accent-orange)';
           this.style.color = 'var(--bg-primary)';
-          showToast('Upvoted!', 'success');
+          showToast(type === 'upvote' ? 'Upvoted!' : 'Marked as resolved!', 'success');
         }
       } catch(e) {
         console.error(e);
+      }
+    });
+  });
+
+  // Deletion
+  document.querySelectorAll('.delete-report-btn').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      if (!confirm('{{ _("confirm_delete_msg") }}')) return;
+      const id = this.dataset.id;
+      
+      try {
+        const res = await fetch(`/api/reports/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          showToast('{{ _("report_deleted_msg") }}', 'success');
+          this.closest('.report-card').remove();
+          const countEl = document.getElementById('feed-count');
+          countEl.textContent = parseInt(countEl.textContent) - 1;
+        } else {
+          showToast('Unauthorized or error deleting report.', 'error');
+        }
+      } catch(e) {
+        showToast('Error deleting report.', 'error');
       }
     });
   });

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Verify OTP - AquaAlert{% endblock %}
+
+{% block content %}
+<div class="auth-body">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-logo">💧 AquaAlert</div>
+      <h2>{{ _('verify_login') }}</h2>
+      <p class="auth-subtitle">{{ _('otp_sent_msg') }}</p>
+
+      <form method="POST" action="{{ url_for('verify_otp') }}">
+        <div class="form-group">
+          <label>{{ _('enter_otp') }}</label>
+          <input type="text" name="otp" required placeholder="123456" maxlength="6" pattern="\d{6}" style="text-align: center; letter-spacing: 12px; font-size: 1.5rem;">
+        </div>
+        <button type="submit" class="btn-primary btn-full">{{ _('verify_and_login') }}</button>
+      </form>
+      <div class="auth-footer">
+        <a href="/login">← {{ _('back_to_login') }}</a>
+      </div>
+    </div>
+    <div class="auth-visual">
+      <div class="auth-wave"></div>
+      <div class="auth-tagline">
+        <h3>Secure Access</h3>
+        <p>Two-factor authentication keeps your account safe.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

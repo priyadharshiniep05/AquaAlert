@@ -51,6 +51,7 @@ class FloodReport(db.Model):
     image_url = db.Column(db.String(300))
     verified = db.Column(db.Boolean, default=False)
     upvotes = db.Column(db.Integer, default=0)
+    downvotes = db.Column(db.Integer, default=0)
 
 class SensorReading(db.Model):
     id = db.Column(db.Integer, primary_key=True)
